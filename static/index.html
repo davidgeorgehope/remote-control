@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>TV Remote Control</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <div id="app">
+    <!-- Setup Panel -->
+    <div id="setup-panel" class="panel">
+      <h1>TV Remote</h1>
+
+      <div class="section">
+        <button onclick="discover()" class="btn btn-discover">Discover TVs</button>
+        <div id="devices"></div>
+        <div class="manual-connect">
+          <input type="text" id="manual-host" placeholder="IP address (e.g. 192.168.1.100)">
+          <button onclick="connectToHost(document.getElementById('manual-host').value.trim())" class="btn btn-connect">Connect</button>
+        </div>
+        <div id="pair-dialog" class="hidden">
+          <p>Enter the code shown on your TV:</p>
+          <input type="text" id="pair-code" placeholder="6-digit code" maxlength="6">
+          <button onclick="finishPairing()" class="btn btn-connect">Pair</button>
+        </div>
+        <div id="status-msg" class="status-msg"></div>
+      </div>
+    </div>
+
+    <!-- Remote Panel -->
+    <div id="remote-panel" class="panel hidden">
+      <div class="remote-header">
+        <button onclick="showSetup()" class="btn-back" title="Back to setup">&larr;</button>
+        <div id="device-name">TV Remote</div>
+        <div id="power-indicator" class="indicator"></div>
+      </div>
+
+      <!-- Tab Bar -->
+      <div class="tab-bar">
+        <button class="tab active" data-tab="atv-remote" onclick="switchTab(this)">Remote</button>
+        <button class="tab" data-tab="apps-panel" onclick="switchTab(this)">Apps</button>
+        <button class="tab" data-tab="numpad-panel" onclick="switchTab(this)">123</button>
+      </div>
+
+      <!-- Remote -->
+      <div id="atv-remote" class="tab-content active">
+        <div class="controls-row">
+          <button onclick="sendKey('POWER')" class="btn-round btn-power" title="Power">&#x23FB;</button>
+          <button onclick="sendKey('TV_INPUT')" class="btn-round" title="Input">&#x2398;</button>
+          <button onclick="sendKey('SETTINGS')" class="btn-round" title="Settings">&#x2699;</button>
+        </div>
+
+        <!-- D-pad -->
+        <div class="dpad-container">
+          <button onclick="sendKey('DPAD_UP')" class="dpad-btn dpad-up" title="Up">&#x25B2;</button>
+          <button onclick="sendKey('DPAD_LEFT')" class="dpad-btn dpad-left" title="Left">&#x25C0;</button>
+          <button onclick="sendKey('DPAD_CENTER')" class="dpad-btn dpad-ok" title="OK">OK</button>
+          <button onclick="sendKey('DPAD_RIGHT')" class="dpad-btn dpad-right" title="Right">&#x25B6;</button>
+          <button onclick="sendKey('DPAD_DOWN')" class="dpad-btn dpad-down" title="Down">&#x25BC;</button>
+        </div>
+
+        <div class="controls-row">
+          <button onclick="sendKey('BACK')" class="btn-pill" title="Back">&#x2190; Back</button>
+          <button onclick="sendKey('HOME')" class="btn-pill" title="Home">&#x2302; Home</button>
+          <button onclick="sendKey('MENU')" class="btn-pill" title="Menu">&#x2630; Menu</button>
+        </div>
+
+        <!-- Volume & Channel -->
+        <div class="vol-ch-row">
+          <div class="rocker">
+            <button onclick="sendKey('VOLUME_UP')" class="rocker-top">VOL +</button>
+            <button onclick="sendKey('VOLUME_MUTE')" class="rocker-mid">&#x1F507;</button>
+            <button onclick="sendKey('VOLUME_DOWN')" class="rocker-bot">VOL &minus;</button>
+          </div>
+          <div class="rocker">
+            <button onclick="sendKey('CHANNEL_UP')" class="rocker-top">CH +</button>
+            <button onclick="sendKey('GUIDE')" class="rocker-mid">Guide</button>
+            <button onclick="sendKey('CHANNEL_DOWN')" class="rocker-bot">CH &minus;</button>
+          </div>
+        </div>
+
+        <!-- Media Controls -->
+        <div class="media-row">
+          <button onclick="sendKey('MEDIA_PREVIOUS')" class="btn-media" title="Previous">&#x23EE;</button>
+          <button onclick="sendKey('MEDIA_REWIND')" class="btn-media" title="Rewind">&#x23EA;</button>
+          <button onclick="sendKey('MEDIA_PLAY_PAUSE')" class="btn-media btn-media-main" title="Play/Pause">&#x23EF;</button>
+          <button onclick="sendKey('MEDIA_FAST_FORWARD')" class="btn-media" title="Forward">&#x23E9;</button>
+          <button onclick="sendKey('MEDIA_NEXT')" class="btn-media" title="Next">&#x23ED;</button>
+        </div>
+
+        <!-- Color buttons -->
+        <div class="color-row">
+          <button onclick="sendKey('PROG_RED')" class="btn-color btn-red"></button>
+          <button onclick="sendKey('PROG_GREEN')" class="btn-color btn-green"></button>
+          <button onclick="sendKey('PROG_YELLOW')" class="btn-color btn-yellow"></button>
+          <button onclick="sendKey('PROG_BLUE')" class="btn-color btn-blue"></button>
+        </div>
+
+        <!-- Text input -->
+        <div class="text-input-row">
+          <input type="text" id="text-input" placeholder="Type text to send...">
+          <button onclick="sendText()" class="btn-send">Send</button>
+        </div>
+      </div>
+
+      <!-- Apps Panel -->
+      <div id="apps-panel" class="tab-content">
+        <div class="apps-grid">
+          <button onclick="launchApp('com.netflix.ninja')" class="app-btn app-netflix">Netflix</button>
+          <button onclick="launchApp('com.google.android.youtube.tv')" class="app-btn app-youtube">YouTube</button>
+          <button onclick="launchApp('com.disney.disneyplus')" class="app-btn app-disney">Disney+</button>
+          <button onclick="launchApp('com.amazon.amazonvideo.livingroom')" class="app-btn app-prime">Prime</button>
+          <button onclick="launchApp('com.hulu.livingroomplus')" class="app-btn app-hulu">Hulu</button>
+          <button onclick="launchApp('com.apple.atve.androidtv.appletv')" class="app-btn app-appletv">Apple TV</button>
+          <button onclick="launchApp('com.hbo.hbonow')" class="app-btn app-hbo">Max</button>
+          <button onclick="launchApp('com.peacocktv.peacockandroid')" class="app-btn app-peacock">Peacock</button>
+          <button onclick="launchApp('com.plexapp.android')" class="app-btn app-plex">Plex</button>
+          <button onclick="launchApp('com.spotify.tv.android')" class="app-btn app-spotify">Spotify</button>
+          <button onclick="launchApp('com.paramountplus')" class="app-btn app-paramount">Paramount+</button>
+          <button onclick="launchApp('com.google.android.tvlauncher')" class="app-btn app-default">Home</button>
+        </div>
+        <div class="custom-app-row">
+          <input type="text" id="custom-app" placeholder="Package name or URL">
+          <button onclick="launchCustomApp()" class="btn-send">Launch</button>
+        </div>
+      </div>
+
+      <!-- Number Pad -->
+      <div id="numpad-panel" class="tab-content">
+        <div class="numpad-grid">
+          <button onclick="sendKey('1')" class="btn-num">1</button>
+          <button onclick="sendKey('2')" class="btn-num">2</button>
+          <button onclick="sendKey('3')" class="btn-num">3</button>
+          <button onclick="sendKey('4')" class="btn-num">4</button>
+          <button onclick="sendKey('5')" class="btn-num">5</button>
+          <button onclick="sendKey('6')" class="btn-num">6</button>
+          <button onclick="sendKey('7')" class="btn-num">7</button>
+          <button onclick="sendKey('8')" class="btn-num">8</button>
+          <button onclick="sendKey('9')" class="btn-num">9</button>
+          <button onclick="sendKey('INFO')" class="btn-num">INFO</button>
+          <button onclick="sendKey('0')" class="btn-num">0</button>
+          <button onclick="sendKey('CAPTIONS')" class="btn-num">CC</button>
+        </div>
+      </div>
+
+      <!-- Status Bar -->
+      <div id="status-bar">
+        <span id="conn-status">Disconnected</span>
+        <span id="current-app"></span>
+        <span id="volume-display"></span>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

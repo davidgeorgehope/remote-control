@@ -1,0 +1,5 @@
+fastapi>=0.104
+uvicorn>=0.24
+androidtvremote2>=0.0.1
+pychromecast>=13.0
+zeroconf>=0.80
