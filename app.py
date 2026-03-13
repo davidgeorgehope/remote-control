@@ -1,11 +1,12 @@
 """TV Remote Control - FastAPI backend using androidtvremote2."""
 
 import asyncio
+import json
 import logging
 import os
 from contextlib import asynccontextmanager
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Dict, List, Optional
 
 import pychromecast
 from androidtvremote2 import AndroidTVRemote, CannotConnect, ConnectionClosed, InvalidAuth
@@ -19,6 +20,19 @@ log = logging.getLogger("remote")
 
 CERT_DIR = Path(__file__).parent / "certs"
 CERT_DIR.mkdir(exist_ok=True)
+
+DEVICES_FILE = Path(__file__).parent / "devices.json"
+
+def load_saved_devices() -> list:
+    if DEVICES_FILE.exists():
+        try:
+            return json.loads(DEVICES_FILE.read_text())
+        except Exception:
+            return []
+    return []
+
+def save_devices(devices: list):
+    DEVICES_FILE.write_text(json.dumps(devices, indent=2))
 
 # ── State ────────────────────────────────────────────────────────────────────
 
@@ -58,6 +72,36 @@ class TextCommand(BaseModel):
 class AppCommand(BaseModel):
     host: str
     app: str
+
+# ── Saved Devices ────────────────────────────────────────────────────────────
+
+@app.get("/api/devices")
+async def get_devices():
+    return {"devices": load_saved_devices()}
+
+@app.post("/api/devices/save")
+async def save_device(req: HostRequest):
+    """Save a device after successful connection."""
+    devices = load_saved_devices()
+    # Don't duplicate
+    if not any(d["host"] == req.host for d in devices):
+        # Try to get device info if connected
+        name = req.host
+        model = "Android TV"
+        remote = android_tvs.get(req.host)
+        if remote and remote.device_info:
+            info = remote.device_info
+            name = f"{info.get('manufacturer', '')} {info.get('model', '')}".strip() or req.host
+            model = info.get('model', 'Android TV')
+        devices.append({"name": name, "host": req.host, "model": model})
+        save_devices(devices)
+    return {"status": "saved", "devices": devices}
+
+@app.post("/api/devices/remove")
+async def remove_device(req: HostRequest):
+    devices = [d for d in load_saved_devices() if d["host"] != req.host]
+    save_devices(devices)
+    return {"status": "removed", "devices": devices}
 
 # ── Discovery (uses Chromecast mDNS to find devices + their IPs) ────────────
 
@@ -152,6 +196,15 @@ async def connect(req: HostRequest):
         raise HTTPException(502, f"Cannot reach TV at {host}: {e}")
 
     android_tvs[host] = remote
+
+    # Auto-save device
+    devices = load_saved_devices()
+    info = remote.device_info or {}
+    dev_name = f"{info.get('manufacturer', '')} {info.get('model', '')}".strip() or host
+    if not any(d["host"] == host for d in devices):
+        devices.append({"name": dev_name, "host": host, "model": info.get("model", "Android TV")})
+        save_devices(devices)
+
     return {
         "status": "connected",
         "host": host,
@@ -204,6 +257,14 @@ async def pair_finish(req: PairFinish):
         remote.keep_reconnecting()
     except (CannotConnect, InvalidAuth) as e:
         raise HTTPException(502, str(e))
+
+    # Auto-save device after pairing
+    devices = load_saved_devices()
+    info = remote.device_info or {}
+    dev_name = f"{info.get('manufacturer', '')} {info.get('model', '')}".strip() or req.host
+    if not any(d["host"] == req.host for d in devices):
+        devices.append({"name": dev_name, "host": req.host, "model": info.get("model", "Android TV")})
+        save_devices(devices)
 
     return {
         "status": "connected",

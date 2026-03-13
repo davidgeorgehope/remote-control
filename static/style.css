@@ -567,3 +567,9 @@ body {
 }
 
 .flash { animation: press-flash 0.3s ease-out; }
+
+/* Saved devices */
+.device-actions { display: flex; gap: 6px; align-items: center; }
+.btn-remove { background: transparent; border: 1px solid #555; color: #999; width: 28px; height: 28px; border-radius: 50%; cursor: pointer; font-size: 16px; padding: 0; line-height: 1; }
+.btn-remove:hover { background: #c0392b; color: white; border-color: #c0392b; }
+.saved-device { border-left: 3px solid #3498db; }

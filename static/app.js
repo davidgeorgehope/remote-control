@@ -213,7 +213,41 @@ document.addEventListener("keydown", (e) => {
   if (key) { e.preventDefault(); sendKey(key); }
 });
 
+/* ── Saved Devices ────────────────────────────────────────────────────────── */
+
+async function loadSavedDevices() {
+  try {
+    const data = await api("/api/devices");
+    const container = document.getElementById("devices");
+    if (data.devices.length === 0) return;
+
+    container.innerHTML = "";
+    data.devices.forEach(d => {
+      const div = document.createElement("div");
+      div.className = "device-item saved-device";
+      div.innerHTML = `<span>${d.name}<br><small>${d.model} &middot; ${d.host}</small></span>
+        <div class="device-actions">
+          <button onclick="connectToHost('${d.host}')">Connect</button>
+          <button onclick="removeDevice('${d.host}')" class="btn-remove" title="Remove">&times;</button>
+        </div>`;
+      container.appendChild(div);
+    });
+  } catch (e) {
+    console.error("Failed to load saved devices:", e);
+  }
+}
+
+async function removeDevice(ip) {
+  try {
+    await api("/api/devices/remove", { host: ip });
+    loadSavedDevices();
+  } catch (e) {
+    console.error("Failed to remove device:", e);
+  }
+}
+
 document.addEventListener("DOMContentLoaded", () => {
+  loadSavedDevices();
   document.getElementById("text-input")?.addEventListener("keydown", e => {
     if (e.key === "Enter") sendText();
   });
